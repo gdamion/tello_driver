@@ -217,9 +217,9 @@ class GamepadTeleopNode:
                     self.pub_fast_mode.publish()
 
             cmd = Twist()
-            cmd.linear.x = -self.joy_state.RX
-            cmd.linear.y = self.joy_state.RY
-            cmd.linear.z = self.joy_state.LY
+            cmd.linear.x = self.joy_state.RY
+            cmd.linear.y = -self.joy_state.RX
+            cmd.linear.z = -self.joy_state.LY
             cmd.angular.z = -self.joy_state.LX
             self.pub_cmd_out.publish(cmd)
 

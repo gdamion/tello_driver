@@ -405,17 +405,17 @@ class TelloNode(tello.Tello):
         odom_msg.header.frame_id = rospy.get_namespace() + 'local_origin'        
 
         # Height from MVO received as negative distance to floor
-        odom_msg.pose.pose.position.z = -data.mvo.pos_z #self.height #-data.mvo.pos_z
         odom_msg.pose.pose.position.x = data.mvo.pos_x
         odom_msg.pose.pose.position.y = data.mvo.pos_y
+        odom_msg.pose.pose.position.z = -self.height #-data.mvo.pos_z
         odom_msg.pose.pose.orientation.w = data.imu.q0
         odom_msg.pose.pose.orientation.x = data.imu.q1
         odom_msg.pose.pose.orientation.y = data.imu.q2
         odom_msg.pose.pose.orientation.z = data.imu.q3
         # Linear speeds from MVO received in dm/sec
-        odom_msg.twist.twist.linear.x = data.mvo.vel_y/10
-        odom_msg.twist.twist.linear.y = data.mvo.vel_x/10
-        odom_msg.twist.twist.linear.z = -data.mvo.vel_z/10
+        odom_msg.twist.twist.linear.x = data.mvo.vel_x/10
+        odom_msg.twist.twist.linear.y = data.mvo.vel_y/10
+        odom_msg.twist.twist.linear.z = data.mvo.vel_z/10
         odom_msg.twist.twist.angular.x = data.imu.gyro_x
         odom_msg.twist.twist.angular.y = data.imu.gyro_y
         odom_msg.twist.twist.angular.z = data.imu.gyro_z
@@ -440,10 +440,26 @@ class TelloNode(tello.Tello):
         self.pub_imu.publish(imu_msg)
 
     def cb_cmd_vel(self, msg):
-        self.set_pitch( self.__scale_vel_cmd(msg.linear.y) )
-        self.set_roll( self.__scale_vel_cmd(msg.linear.x) )
-        self.set_yaw( self.__scale_vel_cmd(msg.angular.z) )
-        self.set_throttle( self.__scale_vel_cmd(msg.linear.z) )
+        """
+            [Drone front]
+            x
+            /\
+            |
+            |
+           (x)-----> y  [Drone right]
+
+        Positive rotations is CCW.
+        So:
+            positive `x-velocity` sets by `CW` rotation around y-axis
+            positive `y-velocity` sets by `CW`?? rotation around x-axis
+            positive `z-velocity` sets by negative `throttle`
+
+            `yaw` is positive `angular.z`
+        """
+        self.set_pitch(self.__scale_vel_cmd(msg.linear.x))  # rotation around y-axis
+        self.set_roll(self.__scale_vel_cmd(msg.linear.y))   # rotation around x-axis
+        self.set_yaw(self.__scale_vel_cmd(msg.angular.z))   # rotation around z-axis
+        self.set_throttle(self.__scale_vel_cmd(-msg.linear.z))
 
     def cb_flip(self, msg):
         if msg.data < 0 or msg.data > 7: # flip integers between [0,7]
