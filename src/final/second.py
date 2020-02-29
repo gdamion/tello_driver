@@ -58,6 +58,9 @@ class DroneController:
 
         self.precision = 0.10
 
+        self.x_offset = 0
+        self.y_offset = 0
+
     def odom_callback(self, msg):
         lock.acquire()
         q = msg.pose.pose.orientation
@@ -121,8 +124,8 @@ class DroneController:
 #	    theta = arctan2(y_err, x_err)
 
     def get_error(self, goal_x, goal_y, goal_z, goal_theta):
-        self.x_erorr = goal_x - self.state_position.x
-        self.y_erorr = goal_y - self.state_position.y
+        self.x_error = goal_x - self.state_position.x
+        self.y_error = goal_y - self.state_position.y
         self.z_error = goal_z - self.state_position.z
         self.theta_erorr = goal_theta - self.state_orientation.z
         self.dist = sqrt(self.x_error ** 2 + self.y_error ** 2)
@@ -150,15 +153,14 @@ if __name__ == '__main__':
     dt = 0.05
     flag_takeoff = False
 
-    x = 0.5
-    y = 0.5
-    h = 1.5
-    
-    theta = 150 * pi / 180
-    
+    x = 1#1
+    y = 1
+    h = 0.5
+    theta = 0#150 * pi / 180
 
     state = 0
     fix_ang = 0
+
 
     r = rospy.Rate(1/dt)
     while not rospy.is_shutdown():
@@ -186,16 +188,21 @@ if __name__ == '__main__':
                     rospy.sleep(2)
                     print("STOP SLEEPING")
                     fix_ang = drone.state_orientation.z
+                    drone.x_offset = drone.state_position.x
+                    drone.y_offset = drone.state_position.y
                     state = 1
 
             #do x
             if state == 1:
-                drone.get_error(x, y, h, theta - fix_ang)
-                
-                if abs(drone.x_error) > drone.precision:
-                    Vx = PID_X.updatePidControl(h, drone.state_position.z, dt) #z
-                    print("Control V: " + str(Vx))
-                    drone.send_velocity(Vx, 0.0, 0.0, 0.0)
+                x_real = x + drone.x_offset
+                y_real = y + drone.y_offset
+                drone.get_error(x_real, y_real, h, theta - fix_ang)
+
+                if drone.dist > drone.precision:
+                    Vx = PID_X.updatePidControl(x_real, drone.state_position.x, dt) #z
+                    Vy = PID_X.updatePidControl(y_real, drone.state_position.y, dt) #z
+                    print("Vx: " + str(Vx) + " Vy: " + str(Vy))
+                    drone.send_velocity(Vx, Vy, 0.0, 0.0)
                     continue
                 else:
                     print("THE GOAL 1 IS REACHED")
@@ -204,7 +211,8 @@ if __name__ == '__main__':
                     rospy.sleep(2)
                     print("STOP SLEEPING")
                     drone.land()
-                    #state = 1
+                    break
+                    #state = 2
 
             #change theta
             if state == 2:
@@ -227,13 +235,13 @@ if __name__ == '__main__':
                     state = 3
 
             #change height
-            if state == 3:  
-                Kr = 0.2                 
-                drone.get_error(0.0, 0.0, h + dh, theta - fix_ang)   
-                theta_err = drone.theta_error      
+            if state == 3:
+                Kr = 0.2
+                drone.get_error(0.0, 0.0, h + dh, theta - fix_ang)
+                theta_err = drone.theta_error
                 if abs(drone.z_error) > drone.precision:
                     if abs(theta_err) > 10 * pi / 180:
-                        drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)                        
+                        drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)
                     Vz = PID_Z.updatePidControl(h, drone.state_position.z, dt)
                     print("Control V: " + str(Vz))
                     drone.send_velocity(0.0, 0.0, Vz, 0.0)
