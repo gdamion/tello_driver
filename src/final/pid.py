@@ -38,8 +38,7 @@ class PID(object):
 
         self.pose_error_old = self.pose_error
 
-        self.control = self.coeff_p * self.pose_error + self.coeff_i * self.integral_error +
-        self.coeff_d * self.derivative_error
+        self.control = self.coeff_p * self.pose_error + self.coeff_i * self.integral_error + self.coeff_d * self.derivative_error
 
         return control
 
