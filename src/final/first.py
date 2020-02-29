@@ -40,7 +40,6 @@ class DroneController:
         self.status_sub = rospy.Subscriber('/tello/status', TelloStatus, self.status_callback)
 
         #DRONE STATE
-        self.odom = Odometry()
         self.imu = Imu()
         self.status = TelloStatus()
 
