@@ -185,7 +185,7 @@ if __name__ == '__main__':
             #change theta
             if state == 1:
                 Kr = 0.2
-                theta_err = drone.theta_erorr
+                theta_err = drone.theta_error
                 print("Theta err: " + str(theta_err) + " Theta: " + str(drone.state_orientation.z))
                 # theta_err += 2*math.pi if drone.state_orientation.z > math.pi else 0
                 if abs(theta_err) > 10 * pi / 180:
@@ -200,12 +200,26 @@ if __name__ == '__main__':
                     drone.land()
                     state = 2
 
-            # #change height
-            # elif state == 2:
-            #     PID.updatePidControl(drone.state_position.z, , dt) #z
-            # #land
-            # elif state == 3:
-            #     drone.land()
+            #change height
+            if state == 2:  
+                Kr = 0.2                 
+                drone.get_error(0.0, 0.0, h + dh, theta - fix_ang)   
+                theta_err = drone.theta_error      
+                if abs(drone.z_error) > drone.precision:
+                    if abs(theta_err) > 10 * pi / 180:
+                        drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)                        
+                    Vz = PID_Z.updatePidControl(h, drone.state_position.z, dt)
+                    print("Control V: " + str(Vz))
+                    drone.send_velocity(0.0, 0.0, Vz, 0.0)
+                    continue
+                else:
+                    print("THE GOAL 2 IS REACHED")
+                    drone.stabilization()
+                    print("SLEEPING")
+                    rospy.sleep(5)
+                    print("STOP SLEEPING")
+                    drone.land()
+
         except rospy.ROSInterruptException as e:
             drone.emergency_stop()
             drone.stop()
@@ -218,8 +232,3 @@ if __name__ == '__main__':
     drone.stop()
     del drone
     print('End')
-
-
-
-
-
