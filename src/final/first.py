@@ -113,6 +113,7 @@ class DroneController:
 if __name__ == '__main__':
     rospy.init_node("main_solve_node")
     drone = DroneController()
+    PID_Z = PID(0.8, 0, 0)
     dt = 0.05
     h = 1.0
     dh = 0.5
@@ -126,7 +127,9 @@ if __name__ == '__main__':
                 #take off
                 if state == 0:
                     drone.takeoff()
-                    PID.updatePidControl(drone.state_position.z, , dt) #z
+                    rospy.sleep(4)
+                    Vz = PID_Z.updatePidControl(h, drone.state_position.z, dt) #z
+
                 #change theta
                 elif state == 1:
                     PID.updatePidControl() #theta

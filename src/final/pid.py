@@ -32,7 +32,7 @@ class PID(object):
         self.pose_error = goal_pose - current_pose
 
         self.integral_error += dt * (self.pose_error + self.pose_error_old)/2
-        self.integral_error = self.relu(integral_error, self.anti_windup)
+        self.integral_error = self.relu(self.integral_error, self.anti_windup)
 
         self.derivative_error = (self.pose_error_old - self.pose_error)/dt
 
@@ -48,7 +48,3 @@ class PID(object):
         if input < -value:
             input = -value
         return input
-
-
-
-    while(True):
