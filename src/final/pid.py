@@ -48,7 +48,3 @@ class PID(object):
         if input < -value:
             input = -value
         return input
-
-
-
-    while(True):
