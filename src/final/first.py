@@ -124,7 +124,7 @@ if __name__ == '__main__':
                 if state == 0:
                     drone.takeoff()
                     rospy.sleep(4)
-                    Vz = PID_Z.updatePidControl(drone.state_position.z, h, dt) #z
+                    Vz = PID_Z.updatePidControl(h, drone.state_position.z, dt) #z
                     
                 #change theta
                 elif state == 1:
