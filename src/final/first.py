@@ -106,9 +106,9 @@ class DroneController:
         self.robotino_cmd_vel_pub.publish(velocity)
     #def get_theta(self)
     #    if (self.state_orientation.z > math.pi):
-#	    theta = 
+#	    theta = arctan2(y_err, x_err) + 2*math.pi
 #	else:
-#	    theta = 
+#	    theta = arctan2(y_err, x_err)
 
     def stabilization(self):
         velocity = Twist()
