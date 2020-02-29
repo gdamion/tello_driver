@@ -9,7 +9,7 @@ import time
 import sys
 import tf.transformations as tftr
 import math
-from pid import *
+#from pid import *
 
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Pose, Point, Vector3, Twist
@@ -93,51 +93,59 @@ class DroneController:
         print("Emergency stop")
         self.emergency_pub.publish(msg)
 
-    def send_velocity(self):
-        velocity = Twist()
-        velocity.linear.x = Vx
-        velocity.linear.y = Vy
-        velocity.angular.z = Wz
-        self.robotino_cmd_vel_pub.publish(velocity)
-    
+    # def send_velocity(self):
+    #     velocity = Twist()
+    #     velocity.linear.x = Vx
+    #     velocity.linear.y = Vy
+    #     velocity.angular.z = Wz
+    #     self.robotino_cmd_vel_pub.publish(velocity)
+
     # def update():
     #     #main loop
     #     while not rospy.is_shutdown():
 
 
-    def main():
-        main = DroneController()
-        dt = 0.05
-        h = 1.0
-        dh = 0.5
-        theta = 0.5
-        state = 0
+if __name__ == '__main__':
+    rospy.init_node("main_solve_node")
+    drone = DroneController()
+    dt = 0.05
+    h = 1.0
+    dh = 0.5
+    theta = 0.5
+    state = 0
 
-        # main = None
-        r = rospy.Rate(1/dt)
-        while not rospy.is_shutdown():
+    # drone = None
+    r = rospy.Rate(1/dt)
+    # while not rospy.is_shutdown():
             # try:
             #     #take off
-            #     if state == 0:  
-            #         main.takeoff()
-            #         PID.updatePidControl(main.state_position.z, , dt) #z
+            #     if state == 0:
+            #         drone.takeoff()
+            #         PID.updatePidControl(drone.state_position.z, , dt) #z
             #     #change theta
             #     elif state == 1:
             #         PID.updatePidControl() #theta
             #     #change height
             #     elif state == 2:
-            #         PID.updatePidControl(main.state_position.z, , dt) #z
+            #         PID.updatePidControl(drone.state_position.z, , dt) #z
             #     #land
             #     elif state == 3:
-            #         main.land()
+            #         drone.land()
             #     state += 1
             # except rospy.ROSInterruptException as e:
-            #     #main.close()
-            #     main.emergency_stop()
-            #     del main
+            #     #drone.close()
+            #     drone.emergency_stop()
+            #     del drone
             #     print('End')
             # r.sleep()
-            main.takeoff()
-            rospy.sleep(10)
-            main.land()
-        self.stop()
+    drone.takeoff()
+    rospy.sleep(10)
+    drone.land()
+    drone.stop()
+    del drone
+    print('End')
+
+
+
+
+
