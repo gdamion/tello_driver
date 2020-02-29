@@ -105,7 +105,6 @@ class DroneController:
         velocity.angular.z = Wz
         self.robotino_cmd_vel_pub.publish(velocity)
 
-<<<<<<< HEAD
     def stabilization(self):
         velocity = Twist()
         velocity.linear.x = 0
@@ -116,11 +115,6 @@ class DroneController:
     # def update():
     #     #main loop
     #     while not rospy.is_shutdown():
-=======
-    def update():
-        #main loop
-        while not rospy.is_shutdown():
->>>>>>> 64f3a3f855183163c53dc2fa3e8ca7654a986c2d
 
 
 if __name__ == '__main__':
@@ -128,9 +122,12 @@ if __name__ == '__main__':
     drone = DroneController()
     PID_Z = PID(0.8, 0, 0)
     dt = 0.05
+    flag_takeoff = False
+
     h = 1.0
     dh = 0.5
     theta = 0.5
+
     state = 0
 
     r = rospy.Rate(1/dt)
@@ -139,19 +136,18 @@ if __name__ == '__main__':
             try:
                 #take off
                 if state == 0:
-                    drone.takeoff()
-                    rospy.sleep(4)
-<<<<<<< HEAD
+                    if flag_takeoff == False:
+                        drone.takeoff()
+                        flag_takeoff = True
+                        rospy.sleep(4)
                     #make sure state pos z ++
-                    Vz = PID_Z.updatePidControl(drone.state_position.z, h, dt) #z
+                    if #erorr > 0.05
+                        Vz = PID_Z.updatePidControl(drone.state_position.z, h, dt) #z
+                        continue
 
 
 
                     
-=======
-                    Vz = PID_Z.updatePidControl(h, drone.state_position.z, dt) #z
-
->>>>>>> 64f3a3f855183163c53dc2fa3e8ca7654a986c2d
                 #change theta
                 elif state == 1:
                     PID.updatePidControl() #theta
