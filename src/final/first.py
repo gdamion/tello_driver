@@ -104,8 +104,11 @@ class DroneController:
         velocity.linear.y = Vy
         velocity.angular.z = Wz
         self.robotino_cmd_vel_pub.publish(velocity)
-    #def theta_stabilization(self)
+    #def get_theta(self)
     #    if (self.state_orientation.z > math.pi):
+#	    theta = 
+#	else:
+#	    theta = 
 
     def stabilization(self):
         velocity = Twist()
@@ -144,7 +147,7 @@ if __name__ == '__main__':
                         rospy.sleep(4)
                     #make sure state pos z ++
                     if #erorr > 0.05
-                        Vz = PID_Z.updatePidControl(drone.state_position.z, h, dt) #z
+                        Vz = PID_Z.updatePidControl(h, drone.state_position.z, dt) #z
                         continue
 
 
