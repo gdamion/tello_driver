@@ -54,14 +54,14 @@ catkin_python_setup()
 add_message_files(
   FILES
   TelloStatus.msg
+  CartesianTrajectory.msg
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  SetTrajectoryParameters.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -76,7 +76,7 @@ generate_messages(
   geometry_msgs
   nav_msgs
   sensor_msgs
-  
+
 )
 
 ################################################
@@ -109,16 +109,16 @@ generate_dynamic_reconfigure_options(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-  CATKIN_DEPENDS cv_bridge 
+  CATKIN_DEPENDS cv_bridge
                  camera_info_manager_py
-                 dynamic_reconfigure 
-                 geometry_msgs 
+                 dynamic_reconfigure
+                 geometry_msgs
                  codec_image_transport
-                 image_transport 
-                 message_runtime 
-                 nav_msgs 
-                 rospy 
-                 sensor_msgs 
+                 image_transport
+                 message_runtime
+                 nav_msgs
+                 rospy
+                 sensor_msgs
                  std_msgs
 #  DEPENDS system_lib
 )
