@@ -20,6 +20,8 @@ from tello_driver.msg import TelloStatus
 from dynamic_reconfigure.server import Server
 from tello_driver.cfg import TelloConfig
 
+lock = threading.Lock()
+
 class DroneController:
 
     def __init__(self):
@@ -42,12 +44,21 @@ class DroneController:
         self.imu = Imu()
         self.status = TelloStatus()
 
+        self.state_position = Point()
+        self.state_orientation = Vector3()
+        self.state_lin_vel = Vector3()
+        self.state_ang_vel = Vector3()
+
         #CALL START METHOD
-        self.start_scenario()
+
 
     def odom_callback(self, msg):
         lock.acquire()
-        self.odom = msg #SAVE FRESH ODOM
+        q = msg.pose.pose.orientation
+        roll, pitch, yaw = tftr.euler_from_quaternion((q.x, q.y, q.z, q.w))
+        self.state_orientation = Vector3(roll, pitch, yaw)
+        self.state_lin_vel = msg.twist.twist.linear
+        self.state_ang_vel = msg.twist.twist.angular
         lock.release()
 
     def imu_callback(self, msg):
@@ -69,9 +80,10 @@ class DroneController:
         self.imu_sub.unregister()
         self.status_sub.unregister()
 
-    def start_scenario():
-        print("Hello There, mr Robot!")
 
-        # WRITE YOUR CODE HERE
+def main():
+    control = DroneController()
 
-        self.stop()
+    ####
+
+    control.stop()
