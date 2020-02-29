@@ -26,14 +26,16 @@ lock = threading.Lock()
 class DroneController:
 
     def __init__(self):
+        self.log_file = open("OUTPUT2.TXT", "wb+")
+
 	    #ROS PUB
         self.cmd_vel_pub = rospy.Publisher('/tello/cmd_vel', Twist, queue_size=1, latch=True)
         self.emergency_pub = rospy.Publisher('/tello/emergency', Empty, queue_size=1, latch=True)
-        self.fast_mode_pub = rospy.Publisher('/tello/fast_mode', Empty, queue_size=1, latch=True)
-        self.flattrim_pub = rospy.Publisher('/tello/flattrim', Empty, queue_size=1, latch=True)
+        # self.fast_mode_pub = rospy.Publisher('/tello/fast_mode', Empty, queue_size=1, latch=True)
+        # self.flattrim_pub = rospy.Publisher('/tello/flattrim', Empty, queue_size=1, latch=True)
         self.land_pub = rospy.Publisher('/tello/land', Empty, queue_size=1, latch=True)
         self.takeoff_pub = rospy.Publisher('/tello/takeoff', Empty, queue_size=1, latch=True)
-        self.manual_takeoff_pub = rospy.Publisher('/tello/manual_takeoff', Empty, queue_size=1, latch=True)
+        # self.manual_takeoff_pub = rospy.Publisher('/tello/manual_takeoff', Empty, queue_size=1, latch=True)
 
         #ROS SUB
         self.odom_sub = rospy.Subscriber('/tello/odom', Odometry, self.odom_callback)
@@ -117,18 +119,13 @@ class DroneController:
         velocity.angular.z = -Wz
         self.cmd_vel_pub.publish(velocity)
 
-    #def theta_stabilization(self)
-    #    if (self.state_orientation.z > math.pi):
-#	    theta = arctan2(y_err, x_err) + 2*math.pi
-#	else:
-#	    theta = arctan2(y_err, x_err)
-
     def get_error(self, goal_x, goal_y, goal_z, goal_theta):
         self.x_error = goal_x - self.state_position.x
         self.y_error = goal_y - self.state_position.y
         self.z_error = goal_z - self.state_position.z
-        self.theta_erorr = goal_theta - self.state_orientation.z
+        self.theta_error = goal_theta - self.state_orientation.z
         self.dist = sqrt(self.x_error ** 2 + self.y_error ** 2)
+        self.log_data()
 
     def stabilization(self):
         velocity = Twist()
@@ -138,53 +135,57 @@ class DroneController:
         velocity.angular.z = 0
         self.cmd_vel_pub.publish(velocity)
 
-    # def update():
-    #     #main loop
-    #     while not rospy.is_shutdown():
+    def log_data(self):
+        s = "Time: " + str(time.time()) + " | X_err: " + self.x_error + " | Y_err: "
+        + self.y_error + " | Z_err: " + self.z_error + " | Theta_err" + self.theta_error + "\n"
+        self.log_file.write(s)
+        print(s)
+
 
 
 if __name__ == '__main__':
-    rospy.init_node("main_solve_node")
+    rospy.init_node("2nd_task_solve_node")
     drone = DroneController()
+
     PID_X = PID(0.8, 0.2, 0.0, 0.3)
     PID_Y = PID(0.8, 0.2, 0.0, 0.3)
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
 
-    dt = 0.05
-    flag_takeoff = False
-
+    ### INPUT YOUR PARAMETERS HERE
     x = 2
     y = 2
     h = 1
     theta = 150 * pi / 180
+    ###
 
     state = 0
     fix_ang = 0
-
-
+    flag_takeoff = False
+    dt = 0.05
     r = rospy.Rate(1/dt)
+
     while not rospy.is_shutdown():
         r.sleep()
-        print("Err: " + str(round(drone.x_error, 4)) + " " + str(round(drone.y_error, 4)) + " " + str(round(drone.z_error, 4)) + " " + str(round(drone.theta_error, 4)))
-
         try:
-            #take off
+
+            # TAKEOFF AND REACH THE H
             if state == 0:
                 drone.get_error(0.0, 0.0, h, theta - fix_ang)
-                if flag_takeoff == False:
+
+                if flag_takeoff == False: # TAKEOFF
                     drone.takeoff()
-                    print("Takeoff")
+                    print("TAKEOFF")
                     flag_takeoff = True
-                #make sure state pos z ++
-                if abs(drone.z_error) > drone.precision:
-                    Vz = PID_Z.updatePidControl(h, drone.state_position.z, dt) #z
-                    print("Control V: " + str(Vz))
+
+                if abs(drone.z_error) > drone.precision: # IF WE HAVEN'T REACHED THE GOAL POINT - MOVE
+                    Vz = PID_Z.updatePidControl(h, drone.state_position.z, dt) # CONTROL Z-SPEED
                     drone.send_velocity(0.0, 0.0, Vz, 0.0)
                     continue
-                else:
-                    print("THE GOAL 0 IS REACHED")
+
+                else: # WE'VE REACHED THE GOAL
+                    print("THE GOAL 0 IS REACHED: TAKEOFF AND HEIGHT H")
                     drone.stabilization()
-                    print("SLEEPING")
+                    print("SLEEPING 10 SECS")
                     rospy.sleep(10)
                     print("STOP SLEEPING")
                     fix_ang = drone.state_orientation.z
@@ -192,76 +193,51 @@ if __name__ == '__main__':
                     drone.y_offset = drone.state_position.y
                     state = 1
 
-            #do x
+            # MOVE TO (X, Y) WITHOUT YAW ROTATION
             if state == 1:
                 x_real = x + drone.x_offset
                 y_real = y + drone.y_offset
                 drone.get_error(x_real, y_real, h, theta - fix_ang)
 
                 if drone.dist > drone.precision:
-                    Vx = PID_X.updatePidControl(x_real, drone.state_position.x, dt) #z
-                    Vy = PID_X.updatePidControl(y_real, drone.state_position.y, dt) #z
-                    print("Vx: " + str(Vx) + " Vy: " + str(Vy))
-                    drone.send_velocity(Vx, Vy, 0.0, 0.0)
+                    Vx = PID_X.updatePidControl(x_real, drone.state_position.x, dt) #CONTROL X-SPEED
+                    Vy = PID_X.updatePidControl(y_real, drone.state_position.y, dt) #CONTROL Y-SPEED
+                    drone.send_velocity(Vx, Vy, 0.0, 0.0) #CONTROL X-Y-SPEEDS
                     continue
+
                 else:
-                    print("THE GOAL 1 IS REACHED")
+                    print("THE GOAL 1 IS REACHED: NOVE TO (X, Y)")
                     drone.stabilization()
-                    print("SLEEPING")
+                    print("SLEEPING 2 SECS")
                     rospy.sleep(2)
                     print("STOP SLEEPING")
-                    #drone.land()
-                    #break
                     state = 2
 
-            #change theta
+            # YAW AND LAND
             if state == 2:
                 drone.get_error(0.0, 0.0, h, theta - fix_ang)
                 Kr = 0.8
-                theta_err = drone.theta_erorr
+                theta_err = drone.theta_error
                 theta_err += 2*math.pi if drone.state_orientation.z > math.pi else 0
 
-                print("Theta err: " + str(theta_err) + " Theta: " + str(drone.state_orientation.z) + " Fix_angle: " + str(fix_ang))
-
                 if abs(theta_err) > 10 * pi / 180:
-                    drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)
+                    drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err) #CONTROL YAW
                     continue
-                else:
-                    print("THE GOAL 2 IS REACHED")
+
+                else: # WE'VE REACHED THE NEEDED ANGLE, NOW LETS LAND
+                    print("THE GOAL 2 IS REACHED: ANGULAR MOVE")
                     drone.stabilization()
-                    print("SLEEPING")
+                    print("SLEEPING 10 SECS")
                     rospy.sleep(10)
                     print("STOP SLEEPING")
                     drone.land()
+                    print("LANDING")
                     break
-                    #state = 3
-
-
-            #change height
-            if state == 3:
-                Kr = 0.2
-                drone.get_error(0.0, 0.0, 0.0, theta - fix_ang)
-                theta_err = drone.theta_error
-                if abs(theta_err) > 10 * pi / 180:
-                    drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)
-                    continue
-                else:
-                    print("THE GOAL 2 IS REACHED")
-                    drone.stabilization()
-                    print("SLEEPING")
-                    rospy.sleep(5)
-                    print("STOP SLEEPING")
-                    drone.land()
 
         except rospy.ROSInterruptException as e:
             drone.emergency_stop()
-            drone.stop()
-            del drone
-            print('End')
+            drone.land()
 
-    # drone.takeoff()
-    # rospy.sleep(10)
-    # drone.land()
     drone.stop()
     del drone
     print('End')
