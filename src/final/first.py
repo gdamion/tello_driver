@@ -178,7 +178,7 @@ if __name__ == '__main__':
                     print("THE GOAL 0 IS REACHED")
                     drone.stabilization()
                     print("SLEEPING")
-                    rospy.sleep(2)
+                    rospy.sleep(10)
                     print("STOP SLEEPING")
                     # drone.land()
                     fix_ang = drone.state_orientation.z
@@ -187,7 +187,7 @@ if __name__ == '__main__':
             #change theta
             if state == 1:
                 drone.get_error(0.0, 0.0, h, theta - fix_ang)
-                Kr = 0.7
+                Kr = 0.8
                 theta_err = drone.theta_erorr
                 theta_err += 2*math.pi if drone.state_orientation.z > math.pi else 0
 
@@ -200,19 +200,19 @@ if __name__ == '__main__':
                     print("THE GOAL 1 IS REACHED")
                     drone.stabilization()
                     print("SLEEPING")
-                    rospy.sleep(2)
+                    rospy.sleep(10)
                     print("STOP SLEEPING")
                     state = 2
 
             #change height
-            if state == 2:  
-                Kr = 0.2                 
-                drone.get_error(0.0, 0.0, h + dh, theta - fix_ang)   
-                theta_err = drone.theta_error      
+            if state == 2:
+                Kr = 0.2
+                drone.get_error(0.0, 0.0, h + dh, theta - fix_ang)
+                theta_err = drone.theta_error
                 if abs(drone.z_error) > drone.precision:
                     if abs(theta_err) > 10 * pi / 180:
-                        drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)                        
-                    Vz = PID_Z.updatePidControl(h, drone.state_position.z, dt)
+                        drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)
+                    Vz = PID_Z.updatePidControl(h + dh, drone.state_position.z, dt)
                     print("Control V: " + str(Vz))
                     drone.send_velocity(0.0, 0.0, Vz, 0.0)
                     continue
@@ -220,7 +220,7 @@ if __name__ == '__main__':
                     print("THE GOAL 2 IS REACHED")
                     drone.stabilization()
                     print("SLEEPING")
-                    rospy.sleep(5)
+                    rospy.sleep(10)
                     print("STOP SLEEPING")
                     drone.land()
 
