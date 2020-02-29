@@ -10,6 +10,7 @@ import sys
 import tf.transformations as tftr
 import math
 from pid import *
+from trajectory_generator import *
 
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Pose, Point, Vector3, Twist
@@ -42,7 +43,7 @@ class DroneController:
         self.imu_sub = rospy.Subscriber('/tello/imu', Imu, self.imu_callback)
         self.status_sub = rospy.Subscriber('/tello/status', TelloStatus, self.status_callback)
 
-        self.trajectory_sub = rospy.Subscriber('/robotino/trajectory', CartesianTrajectory, self.trajectory_callback)
+        self.trajectory_sub = rospy.Subscriber('/tello/trajectory', CartesianTrajectory, self.trajectory_callback)
 
         #DRONE STATE
         self.imu = Imu()
@@ -55,7 +56,7 @@ class DroneController:
 
         self.start_time = 0
 
-        self.cart_trajectory = None
+        self.cart_trajectory = CartesianTrajectory()
         self.i = 0
 
 
@@ -67,6 +68,9 @@ class DroneController:
         self.dist = 0.0
 
         self.precision = 0.10
+
+        self.x_offset = 0
+        self.y_offset = 0
 
     def trajectory_callback(self, msg):
         lock.acquire()
@@ -136,10 +140,10 @@ class DroneController:
 #	    theta = arctan2(y_err, x_err)
 
     def get_error(self, goal_x, goal_y, goal_z, goal_theta):
-        self.x_erorr = goal_x - self.state_position.x
-        self.y_erorr = goal_y - self.state_position.y
+        self.x_error = goal_x - self.state_position.x
+        self.y_error = goal_y - self.state_position.y
         self.z_error = goal_z - self.state_position.z
-        self.theta_erorr = goal_theta - self.state_orientation.z
+        self.theta_error = goal_theta - self.state_orientation.z
         self.dist = sqrt(self.x_error ** 2 + self.y_error ** 2)
 
     def stabilization(self):
@@ -153,18 +157,13 @@ class DroneController:
     def get_quantity_points(self, traj):
         return len(traj)
 
-    def get_shorted_trajectory(self, traj, step):
-        del traj[1:step]
-        return traj
-
     def check_distance(self, iter, pose_x, pose_y):
         for i in range(iter, len(self.cart_trajectory.poses)):
-            x_error = self.cart_trajectory.poses.x - pose_x
-            y_error = self.cart_trajectory.poses.y - pose_y
-            distance = sqrt(x_error*x_error + y_error*y_error)
+            x_error = self.cart_trajectory.poses[i].x - pose_x
+            y_error = self.cart_trajectory.poses[i].y - pose_y
+            distance = sqrt(x_error**2 + y_error**2)
             if (distance >= 0.10):
-                step_iter = i
-                return step_iter - 1
+                return int(i)
 
 
 
@@ -174,14 +173,15 @@ if __name__ == '__main__':
     drone = DroneController()
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
 
-    PID_X = PID(1.15, 0.4, 0.0, 0.5)
-    PID_Y = PID(1.15, 0.4, 0.0, 0.5)
+    PID_X = PID(0.8, 0.1, 0.0, 0.5)
+    PID_Y = PID(0.8, 0.1, 0.0, 0.5)
+
+    Kr = 0.7
 
     dt = 0.05
     flag_takeoff = False
 
-    h = 1.5
-    dh = 0.5
+    h = 0.3
     theta = 90 * pi / 180
 
     state = 0
@@ -210,7 +210,7 @@ if __name__ == '__main__':
                     print("THE GOAL 0 IS REACHED")
                     drone.stabilization()
                     print("SLEEPING")
-                    rospy.sleep(5)
+                    rospy.sleep(2)
                     print("STOP SLEEPING")
                     # drone.land()
                     fix_ang = drone.state_orientation.z
@@ -218,70 +218,61 @@ if __name__ == '__main__':
 
             #8-like trajectory
             if state == 1:
+                drone.x_offset = drone.state_position.x
+                drone.y_offset = drone.state_position.y
+                drone.start_time = time.time()
 
-                drone.get_error(drone.cart_trajectory.poses.x, drone.cart_trajectory.poses.y, 0, drone.cart_trajectory.poses.theta)
-
-                self.start_time = time.time()
-
-                drone.cart_trajectory.poses = drone.get_shorted_trajectory(drone.cart_trajectory.poses, step)
-                N = self.get_quantity_points(drone.cart_trajectory.poses)
+                N = drone.get_quantity_points(drone.cart_trajectory.poses)
+                print("N " + str(N))
 
                 while ((time.time() - drone.start_time) <= 300):
-                    print(time.time() - drone.start_time)
-                    if(self.i < N):
+                    if(drone.i < N - 2):
+                        print(str(drone.i))
+                        goal_pose = drone.cart_trajectory.poses[drone.i]
 
-                        goal_pose = drone.cart_trajectory.poses[self.i]
+                        drone.get_error(goal_pose.x, goal_pose.y, 0, goal_pose.theta)
 
-                        iter = self.check_distance(self.i, drone.state_position.x, drone.state_position.y)
+                        iter = drone.check_distance(drone.i, drone.state_position.x, drone.state_position.y)
 
-                        distance = sqrt(drone.x_erorr*drone.x_erorr + drone.y_error*drone.y_error)
+                        if abs(drone.dist) > drone.precision:
+                            x_real = goal_pose.x + drone.x_offset
+                            y_real = goal_pose.y + drone.y_offset
 
-                        if abs(distance) > drone.precision:
-                            Vx = PID_X.updatePidControl(goal_pose.x, drone.state_position.x, dt)
-                            Vy = PID_Y.updatePidControl(goal_pose.y, drone.state_position.y, dt)
+                            Vx = PID_X.updatePidControl(x_real, drone.state_position.x, dt)
+                            Vy = PID_Y.updatePidControl(y_real, drone.state_position.y, dt)
 
-                            theta = self.state_orientation.z
+                            theta = drone.state_orientation.z
+                            error_angle = goal_pose.theta - theta
 
-                            if (theta > math.pi):
-                                error_angle = arctan2(drone.y_error, drone.x_erorr) - theta + 2 * pi
+                            if (error_angle >= math.pi):
+                                error_angle -= 2*math.pi
                             else:
-                                error_angle = arctan2(drone.y_error, drone.x_erorr) - theta
+                                error_angle += 2*math.pi
 
-                            error_angle = error_angle * Kr
+                            error_angle *= -Kr
 
-                            drone.send_velocity(Vx, Vy, 0.0, 0.0)
+                            print("Vx " + str(Vx) + " Vy " + str(Vy) + " Err_theta" + str(error_angle))
 
-                    self.i += iter
+                            drone.send_velocity(Vx, Vy, 0.0, error_angle)
+                            drone.i = iter + 1
+                            print("iter " + str(iter))
+                    else :
+                        drone.i = 0
+            else:
+                print("THE GOAL 1 IS REACHED")
+                drone.stabilization()
+                print("SLEEPING")
+                rospy.sleep(2)
+                print("STOP SLEEPING")
+                drone.land()
+                break
 
-
-
-    def get_shorted_trajectory(self, traj, step):
-        del traj[1:step]
-        return traj
-                else:
-                    print("THE GOAL 1 IS REACHED")
-                    drone.stabilization()
-                    print("SLEEPING")
-                    rospy.sleep(5)
-                    print("STOP SLEEPING")
-                    drone.land()
-                    state = 2
-
-            # #change height
-            # elif state == 2:
-            #     PID.updatePidControl(drone.state_position.z, , dt) #z
-            # #land
-            # elif state == 3:
-            #     drone.land()
         except rospy.ROSInterruptException as e:
             drone.emergency_stop()
             drone.stop()
             del drone
             print('End')
 
-    # drone.takeoff()
-    # rospy.sleep(10)
-    # drone.land()
     drone.stop()
     del drone
     print('End')

@@ -20,8 +20,8 @@ class TrajectoryGenerator:
 
         # trajectory parameters (initial)
         self.laps = 1   # quantity laps
+        self.A_x, self.A_y = 0.5, 0.5
         self.velocity = 0.1
-        self.A_x, self.A_y = 1., 1.
         self.phi = -pi / 2.
 
         self.tf = 10  # time for lap. Just for c
@@ -31,7 +31,7 @@ class TrajectoryGenerator:
 
         self.is_update = True   # update trajectory parameters
 
-        self.trajectory_pub = rospy.Publisher('/robotino/trajectory', CartesianTrajectory, queue_size=-1)
+        self.trajectory_pub = rospy.Publisher('/tello/trajectory', CartesianTrajectory, queue_size=-1)
         self.trajectrory_parameters_srv = None
         try:
             self.trajectrory_parameters_srv = rospy.Service('/set_trajectory_parameters', SetTrajectoryParameters, self.trajectrory_parameters_handler)
@@ -117,7 +117,7 @@ class TrajectoryGenerator:
 
             ti += self.dt
 
-        rospy.loginfo('Trajectory for Robotino2 cooked!')
+        rospy.loginfo('Trajectory for tello cooked!')
         rospy.loginfo('laps = {}'.format(self.laps))
         rospy.loginfo('velocity = {}'.format(self.velocity))
         rospy.loginfo('lap duration = {}'.format(ti))
