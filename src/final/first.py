@@ -70,10 +70,18 @@ class DroneController:
         self.status = msg #SAVE FRESH STATUS
         lock.release()
 
+    def land(self):
+        msg = Empty()
+        self.land_pub.publish(msg)
+
+    def takeoff(self):
+        msg = Empty()
+        self.takeoff_pub.publish(msg)
+
     def stop(self):
         """ Reset the robot """
         msg = Empty()
-        self.land_pub.publish(msg)
+        # self.land_pub.publish(msg)
 
         self.odom_sub.unregister()
         self.imu_sub.unregister()
@@ -84,23 +92,51 @@ class DroneController:
         print("Emergency stop")
         self.emergency_pub.publish(msg)
 
-    def update():
-        #main loop
-        while not rospy.is_shutdown():
+    def send_velocity(self):
+        velocity = Twist()
+        velocity.linear.x = Vx
+        velocity.linear.y = Vy
+        velocity.angular.z = Wz
+        self.robotino_cmd_vel_pub.publish(velocity)
+    
+    # def update():
+    #     #main loop
+    #     while not rospy.is_shutdown():
+
 
     def main():
-        control = DroneController()
+        main = DroneController()
+        dt = 0.05
+        h = 
+        dh = 
+        theta =
+        state = 0
 
-        main = None
+        # main = None
+        r = rospy.Rate(1/dt)
         while not rospy.is_shutdown():
             try:
-                main = DroneController()
-                main.update()
+                #take off
+                if state == 0:  
+
+                    PID.updatePidControl(main.state_position.z, , dt) #z
+                #change theta
+                elif state == 1:
+                    PID.updatePidControl() #theta
+                #change height
+                elif state == 2:
+                    PID.updatePidControl(main.state_position.z, , dt) #z
+                #land
+                elif state == 3:
+                    main.land()
+                # main.update()
+
             except rospy.ROSInterruptException as e:
                 #main.close()
                 main.emergency_stop()
                 del main
                 print('End')
+            r.sleep()
         self.stop()
 
 
