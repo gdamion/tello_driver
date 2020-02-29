@@ -246,7 +246,7 @@ if __name__ == '__main__':
 
                             if (error_angle >= math.pi):
                                 error_angle -= 2*math.pi
-                            else:
+                            elif (error_angle <= -math.pi):
                                 error_angle += 2*math.pi
 
                             error_angle *= -Kr
