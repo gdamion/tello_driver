@@ -146,17 +146,17 @@ class DroneController:
 if __name__ == '__main__':
     rospy.init_node("main_solve_node")
     drone = DroneController()
-    PID_X = PID(0.8, 0.0, 0.0, 0.0)
-    PID_Y = PID(0.8, 0.0, 0.0, 0.0)
+    PID_X = PID(0.8, 0.2, 0.0, 0.3)
+    PID_Y = PID(0.8, 0.2, 0.0, 0.3)
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
 
     dt = 0.05
     flag_takeoff = False
 
-    x = 1#1
-    y = 1
-    h = 0.5
-    theta = 0#150 * pi / 180
+    x = 2
+    y = 2
+    h = 1
+    theta = 150 * pi / 180
 
     state = 0
     fix_ang = 0
@@ -185,7 +185,7 @@ if __name__ == '__main__':
                     print("THE GOAL 0 IS REACHED")
                     drone.stabilization()
                     print("SLEEPING")
-                    rospy.sleep(2)
+                    rospy.sleep(10)
                     print("STOP SLEEPING")
                     fix_ang = drone.state_orientation.z
                     drone.x_offset = drone.state_position.x
@@ -210,14 +210,14 @@ if __name__ == '__main__':
                     print("SLEEPING")
                     rospy.sleep(2)
                     print("STOP SLEEPING")
-                    drone.land()
-                    break
-                    #state = 2
+                    #drone.land()
+                    #break
+                    state = 2
 
             #change theta
             if state == 2:
                 drone.get_error(0.0, 0.0, h, theta - fix_ang)
-                Kr = 0.7
+                Kr = 0.8
                 theta_err = drone.theta_erorr
                 theta_err += 2*math.pi if drone.state_orientation.z > math.pi else 0
 
@@ -227,24 +227,23 @@ if __name__ == '__main__':
                     drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)
                     continue
                 else:
-                    print("THE GOAL 1 IS REACHED")
+                    print("THE GOAL 2 IS REACHED")
                     drone.stabilization()
                     print("SLEEPING")
-                    rospy.sleep(2)
+                    rospy.sleep(10)
                     print("STOP SLEEPING")
-                    state = 3
+                    drone.land()
+                    break
+                    #state = 3
+
 
             #change height
             if state == 3:
                 Kr = 0.2
-                drone.get_error(0.0, 0.0, h + dh, theta - fix_ang)
+                drone.get_error(0.0, 0.0, 0.0, theta - fix_ang)
                 theta_err = drone.theta_error
-                if abs(drone.z_error) > drone.precision:
-                    if abs(theta_err) > 10 * pi / 180:
-                        drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)
-                    Vz = PID_Z.updatePidControl(h, drone.state_position.z, dt)
-                    print("Control V: " + str(Vz))
-                    drone.send_velocity(0.0, 0.0, Vz, 0.0)
+                if abs(theta_err) > 10 * pi / 180:
+                    drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)
                     continue
                 else:
                     print("THE GOAL 2 IS REACHED")
