@@ -138,10 +138,10 @@ if __name__ == '__main__':
             #     del drone
             #     print('End')
             # r.sleep()
-    main.takeoff()
+    drone.takeoff()
     rospy.sleep(10)
-    main.land()
-    main.stop()
+    drone.land()
+    drone.stop()
     del drone
     print('End')
 
