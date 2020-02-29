@@ -115,6 +115,9 @@ class DroneController:
 
     #def theta_stabilization(self)
     #    if (self.state_orientation.z > math.pi):
+#	    theta = arctan2(y_err, x_err) + 2*math.pi
+#	else:
+#	    theta = arctan2(y_err, x_err)
 
     def get_error(self, goal_x, goal_y, goal_z, goal_theta):
         self.x_erorr = goal_x - self.state_position.x
