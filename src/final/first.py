@@ -9,6 +9,7 @@ import time
 import sys
 import tf.transformations as tftr
 import math
+from pid import *
 
 from sensor_msgs.msg import CompressedImage
 from geometry_msgs.msg import Pose, Point, Vector3, Twist
@@ -107,36 +108,38 @@ class DroneController:
     def main():
         main = DroneController()
         dt = 0.05
-        h = 
-        dh = 
-        theta =
+        h = 1.0
+        dh = 0.5
+        theta = 0.5
         state = 0
 
         # main = None
         r = rospy.Rate(1/dt)
         while not rospy.is_shutdown():
-            try:
-                #take off
-                if state == 0:  
-
-                    PID.updatePidControl(main.state_position.z, , dt) #z
-                #change theta
-                elif state == 1:
-                    PID.updatePidControl() #theta
-                #change height
-                elif state == 2:
-                    PID.updatePidControl(main.state_position.z, , dt) #z
-                #land
-                elif state == 3:
-                    main.land()
-                # main.update()
-
-            except rospy.ROSInterruptException as e:
-                #main.close()
-                main.emergency_stop()
-                del main
-                print('End')
-            r.sleep()
+            # try:
+            #     #take off
+            #     if state == 0:  
+            #         main.takeoff()
+            #         PID.updatePidControl(main.state_position.z, , dt) #z
+            #     #change theta
+            #     elif state == 1:
+            #         PID.updatePidControl() #theta
+            #     #change height
+            #     elif state == 2:
+            #         PID.updatePidControl(main.state_position.z, , dt) #z
+            #     #land
+            #     elif state == 3:
+            #         main.land()
+            #     state += 1
+            # except rospy.ROSInterruptException as e:
+            #     #main.close()
+            #     main.emergency_stop()
+            #     del main
+            #     print('End')
+            # r.sleep()
+            main.takeoff()
+            rospy.sleep(10)
+            main.land()
         self.stop()
 
 
