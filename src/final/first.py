@@ -68,6 +68,7 @@ class DroneController:
 
         self.state_orientation = Vector3(roll, -pitch, -yaw)
         self.state_lin_vel = msg.twist.twist.linear
+
         self.state_lin_vel.y *= -1
         self.state_lin_vel.z *= -1
 
@@ -110,7 +111,7 @@ class DroneController:
         velocity.linear.x = Vx
         velocity.linear.y = -Vy
         velocity.linear.z = -Vz
-        velocity.angular.z = Wz
+        velocity.angular.z = -Wz
         self.cmd_vel_pub.publish(velocity)
 
     #def theta_stabilization(self)
@@ -148,7 +149,8 @@ if __name__ == '__main__':
 
     h = 1.5
     dh = 0.5
-    theta = 90 * pi / 180
+    theta = 150 * pi / 180
+    theta += drone.state_orientation.z
 
     state = 0
     fix_ang = 0
@@ -156,12 +158,12 @@ if __name__ == '__main__':
     r = rospy.Rate(1/dt)
     while not rospy.is_shutdown():
         r.sleep()
-        drone.get_error(0.0, 0.0, h, theta - fix_ang)
         print("Err: " + str(round(drone.x_error, 4)) + " " + str(round(drone.y_error, 4)) + " " + str(round(drone.z_error, 4)) + " " + str(round(drone.theta_error, 4)))
 
         try:
             #take off
             if state == 0:
+                drone.get_error(0.0, 0.0, h, theta - fix_ang)
                 if flag_takeoff == False:
                     drone.takeoff()
                     print("Takeoff")
@@ -176,7 +178,7 @@ if __name__ == '__main__':
                     print("THE GOAL 0 IS REACHED")
                     drone.stabilization()
                     print("SLEEPING")
-                    rospy.sleep(5)
+                    rospy.sleep(2)
                     print("STOP SLEEPING")
                     # drone.land()
                     fix_ang = drone.state_orientation.z
@@ -184,10 +186,13 @@ if __name__ == '__main__':
 
             #change theta
             if state == 1:
-                Kr = 0.2
-                theta_err = drone.theta_error
-                print("Theta err: " + str(theta_err) + " Theta: " + str(drone.state_orientation.z))
-                # theta_err += 2*math.pi if drone.state_orientation.z > math.pi else 0
+                drone.get_error(0.0, 0.0, h, theta - fix_ang)
+                Kr = 0.7
+                theta_err = drone.theta_erorr
+                theta_err += 2*math.pi if drone.state_orientation.z > math.pi else 0
+
+                print("Theta err: " + str(theta_err) + " Theta: " + str(drone.state_orientation.z) + " Fix_angle: " + str(fix_ang))
+
                 if abs(theta_err) > 10 * pi / 180:
                     drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err)
                     continue
@@ -195,7 +200,7 @@ if __name__ == '__main__':
                     print("THE GOAL 1 IS REACHED")
                     drone.stabilization()
                     print("SLEEPING")
-                    rospy.sleep(5)
+                    rospy.sleep(2)
                     print("STOP SLEEPING")
                     drone.land()
                     state = 2
