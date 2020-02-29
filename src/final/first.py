@@ -79,31 +79,31 @@ class DroneController:
         self.imu_sub.unregister()
         self.status_sub.unregister()
 
+    def emergency_stop(self):
+        msg = Empty()
+        print("Emergency stop")
+        self.emergency_pub.publish(msg)
 
-def main():
-    control = DroneController()
+    def update():
+        #main loop
+        while not rospy.is_shutdown():
 
-    ####
+    def main():
+        control = DroneController()
 
+        main = None
+        while not rospy.is_shutdown():
+            try:
+                main = DroneController()
+                main.update()
+            except rospy.ROSInterruptException as e:
+                #main.close()
+                main.emergency_stop()
+                del main
+                print('End')
         self.stop()
 
-    def emergency_stop(self):
-    	print("Emergency stop")
-    	self.emergency_pub.publish(Empty)
-    
-    def update():
-    	#main loop
-    	while not rospy.is_shutdown():
-    		
 
 
-main = None
-    while not rospy.is_shutdown():
-        try:
-            main = DroneController()
-            main.update()
-        except rospy.ROSInterruptException as e:
-            #main.close()
-            main.emergency_stop()
-            del main
-            print('End')
+
+
