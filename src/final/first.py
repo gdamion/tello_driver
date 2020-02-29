@@ -202,7 +202,6 @@ if __name__ == '__main__':
                     print("SLEEPING")
                     rospy.sleep(2)
                     print("STOP SLEEPING")
-                    drone.land()
                     state = 2
 
             #change height
