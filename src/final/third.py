@@ -24,8 +24,6 @@ from tello_driver.cfg import TelloConfig
 
 lock = threading.Lock()
 
-
-
 class DroneController:
 
     def __init__(self):
