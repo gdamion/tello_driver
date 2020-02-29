@@ -69,9 +69,30 @@ class DroneController:
         self.imu_sub.unregister()
         self.status_sub.unregister()
 
-    def start_scenario():
+    def start_scenario(self):
         print("Hello There, mr Robot!")
 
         # WRITE YOUR CODE HERE
 
         self.stop()
+
+    def emergency_stop(self):
+    	print("Emergency stop")
+    	self.emergency_pub.publish(Empty)
+    
+    def update():
+    	#main loop
+    	while not rospy.is_shutdown():
+    		
+
+
+main = None
+    while not rospy.is_shutdown():
+        try:
+            main = DroneController()
+            main.update()
+        except rospy.ROSInterruptException as e:
+            #main.close()
+            main.emergency_stop()
+            del main
+            print('End')
