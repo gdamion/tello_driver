@@ -141,8 +141,3 @@ class DroneController:
             rospy.sleep(10)
             main.land()
         self.stop()
-
-
-
-
-
