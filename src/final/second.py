@@ -143,14 +143,19 @@ class DroneController:
 if __name__ == '__main__':
     rospy.init_node("main_solve_node")
     drone = DroneController()
+    PID_X = PID(0.8, 0.0, 0.0, 0.0)
+    PID_Y = PID(0.8, 0.0, 0.0, 0.0)
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
+
     dt = 0.05
     flag_takeoff = False
 
+    x = 0.5
+    y = 0.5
     h = 1.5
-    dh = 0.5
+    
     theta = 150 * pi / 180
-    theta += drone.state_orientation.z
+    
 
     state = 0
     fix_ang = 0
@@ -180,12 +185,29 @@ if __name__ == '__main__':
                     print("SLEEPING")
                     rospy.sleep(2)
                     print("STOP SLEEPING")
-                    # drone.land()
                     fix_ang = drone.state_orientation.z
                     state = 1
 
-            #change theta
+            #do x
             if state == 1:
+                drone.get_error(x, y, h, theta - fix_ang)
+                
+                if abs(drone.x_error) > drone.precision:
+                    Vx = PID_X.updatePidControl(h, drone.state_position.z, dt) #z
+                    print("Control V: " + str(Vx))
+                    drone.send_velocity(Vx, 0.0, 0.0, 0.0)
+                    continue
+                else:
+                    print("THE GOAL 1 IS REACHED")
+                    drone.stabilization()
+                    print("SLEEPING")
+                    rospy.sleep(2)
+                    print("STOP SLEEPING")
+                    drone.land()
+                    #state = 1
+
+            #change theta
+            if state == 2:
                 drone.get_error(0.0, 0.0, h, theta - fix_ang)
                 Kr = 0.7
                 theta_err = drone.theta_erorr
@@ -202,10 +224,10 @@ if __name__ == '__main__':
                     print("SLEEPING")
                     rospy.sleep(2)
                     print("STOP SLEEPING")
-                    state = 2
+                    state = 3
 
             #change height
-            if state == 2:  
+            if state == 3:  
                 Kr = 0.2                 
                 drone.get_error(0.0, 0.0, h + dh, theta - fix_ang)   
                 theta_err = drone.theta_error      
