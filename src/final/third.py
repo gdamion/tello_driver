@@ -160,6 +160,11 @@ class DroneController:
             distance = sqrt(x_error**2 + y_error**2)
             if (distance >= 0.1):
                 return i
+    def get_goal_theta(self, goal_i):
+	x_error = self.cart_trajectory.poses[goal_i].x - self.state_position.x
+        y_error = self.cart_trajectory.poses[goal_i].y - self.state_position.y
+	goal_theta = arctan2(y_error, x_error)
+	return goal_theta
 
 #Замечания
 # Угол желаемый считать относительно текущей и следующей точки
@@ -230,6 +235,7 @@ if __name__ == '__main__':
 
                     if drone.i < N - 2: # If WE ARE NOT OUT OF ARRAY BORDERS
                         goal_pose = drone.cart_trajectory.poses[drone.i]
+			goal_pose.theta = get_goal_theta(drone.i)
                         drone.get_error(goal_pose.x, goal_pose.y, 0, goal_pose.theta)
 
                         #iter = drone.check_distance(drone.i, drone.state_position.x, drone.state_position.y)
