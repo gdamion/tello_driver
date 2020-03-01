@@ -138,11 +138,9 @@ class DroneController:
         self.x_error = goal_x - self.state_position.x
         self.y_error = goal_y - self.state_position.y
         self.z_error = goal_z - self.state_position.z
-        #self.theta_error = goal_theta - self.state_orientation.z
-        self.theta_error = arctan2(goal_y, goal_x)
+        self.theta_error = goal_theta - self.state_orientation.z
+        # self.theta_error = arctan2(goal_y , goal_x)
         self.dist = sqrt(self.x_error ** 2 + self.y_error ** 2)
-        s = "Time: " + str(time.time()) + " | X_err: " + self.x_error + " | Y_err: "
-        + self.y_error + " \nZ_err: " + self.z_error + " | Theta_err" + self.theta_error
         # print(s)
 
     def stabilization(self):
@@ -171,12 +169,13 @@ class DroneController:
 # В 1 и 2 заданиях всегда считать ошибки по всем координатам, чтобы публиковать актуальную инфу в файл
 
 if __name__ == '__main__':
-    rospy.init_node("3rd_task_solve_node")
+    rospy.init_node("task_3rd_solve_node")
     drone = DroneController()
 
-    PID_X = PID(0.8, 0.1, 0.0, 0.5)
-    PID_Y = PID(0.8, 0.1, 0.0, 0.5)
-    PID_Z = PID(1.15, 0.4, 0.0, 0.5)
+    PID_X = PID(2.5, 0.4, 0.0, 0.7)
+    PID_Y = PID(2.5, 0.4, 0.0, 0.7)
+    PID_Z = PID(1.15, 0.4, 0.1, 0.5)
+    PID_THETA = PID(0.5, 0.4, 0.0, 0.6)\
 
     ### INPUT YOUR PARAMETERS HERE
     h = 0.3
@@ -221,24 +220,27 @@ if __name__ == '__main__':
 
             #MOVE ALONG 8-LIKE TRAJECTORY
             if state == 1:
-                #drone.start_time = time.time()
+                drone.start_time = time.time()
 
                 N = len(drone.cart_trajectory.poses)
-                print("N: " + str(N))
+                # print("N: " + str(N))
 
                 while ((time.time() - drone.start_time) <= flight_duration):
 
                     if drone.i < N - 2: # If WE ARE NOT OUT OF ARRAY BORDERS
                         goal_pose = drone.cart_trajectory.poses[drone.i]
-                        drone.get_error(goal_pose.x, goal_pose.y, 0.0, goal_pose.theta)
 
                         #iter = drone.check_distance(drone.i, drone.state_position.x, drone.state_position.y)
 
                         # if drone.dist > drone.precision:
                         x_real_goal = goal_pose.x + drone.x_offset
                         y_real_goal = goal_pose.y + drone.y_offset
+                        drone.get_error(x_real_goal, y_real_goal, 0.0, goal_pose.theta)
+
                         current_theta = drone.state_orientation.z # YAW ANGLE
                         error_angle = goal_pose.theta - current_theta # ANGLE BETWEEN CURRENT STATE AND GOAL
+
+                        error_angle = arctan2(drone.y_error, drone.x_error)
 
                         ### ??? SOS SOS SOS
                         if error_angle >= math.pi:
@@ -248,7 +250,7 @@ if __name__ == '__main__':
 
                         Vx = PID_X.updatePidControl(x_real_goal, drone.state_position.x, dt) #CONTROL X-SPEED
                         Vy = PID_Y.updatePidControl(y_real_goal, drone.state_position.y, dt) #CONTROL Y-SPEED
-                        #Wz = PID_THETA.updatePidControl(current_theta + error_angle, current_theta, dt)
+                        Wz = PID_THETA.updatePidControl(current_theta + error_angle, current_theta, dt)
 
                         #print("Vx " + str(Vx) + " Vy " + str(Vy) + " Err_theta" + str(error_angle))
 
@@ -258,16 +260,20 @@ if __name__ == '__main__':
                         #         #self.Time_to_be_prev += dTc
                         #         continue
                         # elif drone.dist < 0.04 or ((drone.dist - drone.last_dis) > 0.00002): #2 mm
-                        #     drone.readyToMove = True                
+                        #     drone.readyToMove = True
                         #     drone.i += 1
                         #     drone.last_dist = 200.0
                         #     # self.Time_to_be_prev += dTc
                         #     # print("got", self.trajectoryStep - 1, "time", t, self.ts_d[self.trajectoryStep])
-                        #     continue 
-                        if error_angle > 0.05:
-                            drone.send_velocity(0.0, 0.0, 0.0, error_angle * 0.5)
-                        else:
+                        #     continue
+                        # print(error_angle, drone.i, drone.dist)
+                        flag_xy = False
+                        if drone.dist > drone.precision or abs(error_angle) > 0.2:
+                            print(Vx, Vy)
                             drone.i += 1
+                            drone.send_velocity(Vx, Vy, 0.0, Wz)
+                        else:
+                            drone.i += 30
 
                         # if drone.readyToMove == True
                         #     drone.send_velocity(Vx, Vy, 0.0, error_angle)

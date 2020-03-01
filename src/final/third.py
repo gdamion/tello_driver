@@ -144,11 +144,11 @@ class DroneController:
         self.y_error = goal_y - self.state_position.y if "y" in flag else 0
         self.z_error = goal_z - self.state_position.z if "z" in flag else 0
         self.theta_error = goal_theta - self.state_orientation.z if "w" in flag else 0
-        self.theta_error = arctan2(goal_y, goal_x)
+        # self.theta_error = arctan2(goal_y, goal_x)
         self.dist = sqrt(self.x_error ** 2 + self.y_error ** 2)
         s = "Time: " + str(round(time.time() - self.start_times, 4)) + " | X_err: " + str(self.x_error) + " | Y_err: " \
         + str(self.y_error) + " \nZ_err: " + str(self.z_error) + " | Theta_err: " + str(round(self.theta_error, 4)) + "\n"
-        # print(s)
+        print(s)
 
     def stabilization(self):
         velocity = Twist()
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     PID_THETA = PID(0.9, 0.3, 0.0, 0.5)
 
     ### INPUT YOUR PARAMETERS HERE
-    h = 0.3
+    h = 2.0
     ###
 
     Kr = 0.7
@@ -237,38 +237,51 @@ if __name__ == '__main__':
 
                 N = len(drone.cart_trajectory.poses)
                 print("N: " + str(N))
-
+                vel_flag = False
+                ang_flag = False
                 while ((time.time() - drone.start_time) <= flight_duration):
 
                     if drone.i < N - 2: # If WE ARE NOT OUT OF ARRAY BORDERS
                         goal_pose = drone.cart_trajectory.poses[drone.i]
-                        drone.get_error(goal_pose.x, goal_pose.y, h, goal_pose.theta, "xyzw")
-                        iter = drone.check_distance(drone.i, drone.state_position.x, drone.state_position.y)
 
-                        if drone.dist > drone.precision:
-                            x_real = goal_pose.x + drone.x_offset
-                            y_real = goal_pose.y + drone.y_offset
+                        x_real = goal_pose.x + drone.x_offset
+                        y_real = goal_pose.y + drone.y_offset
+                        drone.get_error(x_real, y_real, h, goal_pose.theta, "xyzw")
 
+                        # iter = drone.check_distance(drone.i, drone.state_position.x, drone.state_position.y)
+
+                        Vx, Vy, Wz = 0.0, 0.0, 0.0
+
+                        theta = drone.state_orientation.z # YAW ANGLE
+                        error_angle = goal_pose.theta - theta # ANGLE BETWEEN CURRENT STATE AND GOAL
+
+                        if error_angle >= math.pi:
+                            error_angle -= 2*math.pi
+                        elif (error_angle < -math.pi):
+                            error_angle += 2*math.pi
+
+                        if abs(error_angle) > 0.2 and vel_flag == False:
+                            Wz = PID_THETA.updatePidControl(theta + error_angle, theta, dt)
+                            drone.send_velocity(0.0, 0.0, 0.0, Wz)
+                            ang_flag = True
+                            continue
+                        else :
+                            ang_flag = False
+                            drone.send_velocity(0.0, 0.0, 0.0, 0.0)
+
+                        if drone.dist > drone.precision and ang_flag == False :
                             Vx = PID_X.updatePidControl(x_real, drone.state_position.x, dt) #CONTROL X-SPEED
                             Vy = PID_Y.updatePidControl(y_real, drone.state_position.y, dt) #CONTROL Y-SPEED
+                            drone.send_velocity(Vx, Vy, 0.0, 0.0)
+                            vel_flag = True
+                            drone.i += 1
+                            continue
+                        else :
+                            vel_flag = False
+                            drone.send_velocity(0.0, 0.0, 0.0, 0.0)
 
-                            theta = drone.state_orientation.z # YAW ANGLE
-                            error_angle = goal_pose.theta - theta # ANGLE BETWEEN CURRENT STATE AND GOAL
-
-                            ### ??? SOS SOS SOS
-                            if error_angle >= math.pi:
-                                error_angle -= 2*math.pi
-                            elif (error_angle < -math.pi):
-                                error_angle += 2*math.pi
-
-                            ### ???
-                            Wz = PID_THETA.updatePidControl(theta + error_angle, theta, dt)
-
-                            print("Vx " + str(Vx) + " Vy " + str(Vy) + " Err_theta: " + str(error_angle) +  " Theta: " + str(theta) + " Wz:" + str(Wz))
-
-                            drone.send_velocity(Vx, Vy, 0.0, Wz)
-                            drone.i = iter + 1
-                            print("iter " + str(iter))
+                        if (ang_flag == False and vel_flag == False):
+                            drone.i += 20
                     else :
                         drone.i = 0
 

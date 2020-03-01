@@ -20,7 +20,7 @@ class TrajectoryGenerator:
 
         # trajectory parameters (initial)
         self.laps = 1   # quantity laps
-        self.A_x, self.A_y = 1., 1.
+        self.A_x, self.A_y = 1., 0.5
         self.velocity = 0.1
         self.phi = -pi / 2.
 

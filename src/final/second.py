@@ -155,9 +155,9 @@ if __name__ == '__main__':
 
     ### INPUT YOUR PARAMETERS HERE
     h = 2.0
-    x = -1.25
+    x = 1.25
     y = -1.25
-    theta = 178 * pi / 180
+    theta = 90 * pi / 180
     ###
 
     state = 0
@@ -165,9 +165,8 @@ if __name__ == '__main__':
     flag_takeoff = False
     dt = 0.05
     r = rospy.Rate(1/dt)
-    x *= 0.7
-    y *= 0.7
-    # h -= 1/h
+    x *= 0.75
+    y *= 0.75
 
     while not rospy.is_shutdown():
         r.sleep()

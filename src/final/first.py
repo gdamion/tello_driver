@@ -148,9 +148,9 @@ if __name__ == '__main__':
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
 
     ### INPUT YOUR PARAMETERS HERE
-    h = 2.0
-    dh = -1
-    theta = -90 * pi / 180 + drone.state_orientation.z
+    h = 1.0
+    dh = 1.0
+    theta = 90 * pi / 180 + drone.state_orientation.z
     ###
 
     Kr = 0.8
@@ -159,7 +159,6 @@ if __name__ == '__main__':
     flag_takeoff = False
     dt = 0.05
     r = rospy.Rate(1/dt)
-    # dh *= 0.9
 
     while not rospy.is_shutdown():
         r.sleep()

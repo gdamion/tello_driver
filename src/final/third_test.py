@@ -185,8 +185,8 @@ if __name__ == '__main__':
     rospy.init_node("task_3rd_solve_node")
     drone = DroneController()
 
-    PID_X = PID(0.5, 0.1, 0.0, 0.5)
-    PID_Y = PID(0.5, 0.1, 0.0, 0.5)
+    PID_X = PID(0.3, 0.1, 0.0, 0.5)
+    PID_Y = PID(0.3, 0.1, 0.0, 0.5)
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
     PID_THETA = PID(0.9, 0.3, 0.0, 0.5)
 
