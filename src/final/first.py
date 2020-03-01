@@ -190,7 +190,7 @@ if __name__ == '__main__':
 
             # YAW BY THETA
             if state == 1:
-                drone.get_error(0.0, 0.0, 0.0, theta - fix_ang, "w")
+                drone.get_error(0.0, 0.0, h, theta - fix_ang, "zw")
 
                 theta_err = drone.theta_error
                 theta_err += 2 * math.pi if drone.state_orientation.z > math.pi else 0

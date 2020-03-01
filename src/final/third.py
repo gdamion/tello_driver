@@ -135,7 +135,7 @@ class DroneController:
 	# else:
 	#     theta = arctan2(y_err, x_err)
 
-    def get_error(self, goal_x, goal_y, goal_z, goal_theta):
+    def get_error(self, goal_x, goal_y, goal_z, goal_theta, flag):
         self.x_error = goal_x - self.state_position.x if "x" in flag else 0
         self.y_error = goal_y - self.state_position.y if "y" in flag else 0
         self.z_error = goal_z - self.state_position.z if "z" in flag else 0

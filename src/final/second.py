@@ -121,7 +121,7 @@ class DroneController:
         velocity.angular.z = -Wz
         self.cmd_vel_pub.publish(velocity)
 
-    def get_error(self, goal_x, goal_y, goal_z, goal_theta):
+    def get_error(self, goal_x, goal_y, goal_z, goal_theta, flag):
         self.x_error = goal_x - self.state_position.x if "x" in flag else 0
         self.y_error = goal_y - self.state_position.y if "y" in flag else 0
         self.z_error = goal_z - self.state_position.z if "z" in flag else 0
@@ -154,10 +154,10 @@ if __name__ == '__main__':
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
 
     ### INPUT YOUR PARAMETERS HERE
-    x = 2
-    y = 2
-    h = 1
-    theta = 150 * pi / 180
+    h = 2
+    x = 1
+    y = 1
+    theta = -150 * pi / 180
     ###
 
     state = 0
@@ -165,6 +165,9 @@ if __name__ == '__main__':
     flag_takeoff = False
     dt = 0.05
     r = rospy.Rate(1/dt)
+    x *= 0.75
+    y *= 0.75
+    h *= 1
 
     while not rospy.is_shutdown():
         r.sleep()
@@ -172,7 +175,7 @@ if __name__ == '__main__':
 
             # TAKEOFF AND REACH THE H
             if state == 0:
-                drone.get_error(0.0, 0.0, h, theta - fix_ang)
+                drone.get_error(0.0, 0.0, h, 0.0, "z")
 
                 if flag_takeoff == False: # TAKEOFF
                     drone.takeoff()
@@ -199,7 +202,7 @@ if __name__ == '__main__':
             if state == 1:
                 x_real = x + drone.x_offset
                 y_real = y + drone.y_offset
-                drone.get_error(x_real, y_real, h, theta - fix_ang)
+                drone.get_error(x_real, y_real, h, theta - fix_ang, "xyzw")
 
                 if drone.dist > drone.precision:
                     Vx = PID_X.updatePidControl(x_real, drone.state_position.x, dt) #CONTROL X-SPEED
@@ -217,10 +220,10 @@ if __name__ == '__main__':
 
             # YAW AND LAND
             if state == 2:
-                drone.get_error(0.0, 0.0, h, theta - fix_ang)
+                drone.get_error(0.0, 0.0, h, theta - fix_ang, "zw")
                 Kr = 0.8
                 theta_err = drone.theta_error
-                theta_err += 2*math.pi if drone.state_orientation.z > math.pi else 0
+                theta_err += 2 * math.pi if drone.state_orientation.z > math.pi else 0
 
                 if abs(theta_err) > 10 * pi / 180:
                     drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err) #CONTROL YAW
