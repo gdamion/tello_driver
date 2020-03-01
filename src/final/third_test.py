@@ -185,16 +185,16 @@ if __name__ == '__main__':
     rospy.init_node("task_3rd_solve_node")
     drone = DroneController()
 
-    PID_X = PID(0.8, 0.1, 0.0, 0.5)
-    PID_Y = PID(0.8, 0.1, 0.0, 0.5)
+    PID_X = PID(0.5, 0.1, 0.0, 0.5)
+    PID_Y = PID(0.5, 0.1, 0.0, 0.5)
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
     PID_THETA = PID(0.9, 0.3, 0.0, 0.5)
 
     ### INPUT YOUR PARAMETERS HERE
-    h = 0.3
+    h = 0.5
     ###
 
-    Kr = 0.7
+    Kr = 0.9
     flag_takeoff = False
     theta = 90 * pi / 180
     state = 0
@@ -229,49 +229,147 @@ if __name__ == '__main__':
                     fix_ang = drone.state_orientation.z
                     drone.x_offset = drone.state_position.x
                     drone.y_offset = drone.state_position.y
+                    drone.theta_offset = drone.state_orientation.z
                     state = 1
+
+            # if state == 1:
+
+            #     print("Theta: "+ str(drone.state_orientation.z))
+
+            # if state == 1:
+            #     if drone.readyToMove == True:
+            #         Wz = 0.3
+            #         drone.send_velocity(0.0, 0.0, 0.0, Wz)
+            #         drone.readyToMove = False
+            #     print("Theta: "+ str(drone.state_orientation.z))
 
             #MOVE ALONG 8-LIKE TRAJECTORY
             if state == 1:
-                drone.start_time = time.time()
+                #theta = 1.57
+                goal_x = 1.0
+                goal_y = 0.0
+                drone.get_error(0.0, 0.0, h, theta - fix_ang, "zw")
+                Kr = 0.8
+                theta_err = drone.theta_error
+                theta_err += 2 * math.pi if drone.state_orientation.z > math.pi else 0
 
-                N = len(drone.cart_trajectory.poses)
-                print("N: " + str(N))
+                if abs(theta_err) > 10 * pi / 180:
+                    drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err) #CONTROL YAW
+                    print(theta_err)
+                    continue
 
-                while ((time.time() - drone.start_time) <= flight_duration):
+                else: # WE'VE REACHED THE NEEDED ANGLE, NOW LETS LAND
+                    print("THE GOAL 2 IS REACHED: ANGULAR MOVE")
+                    drone.stabilization()
+                    print("SLEEPING 10 SECS")
+                    rospy.sleep(3)
+                    print("STOP SLEEPING")
+                    #drone.land()
+                    #print("LANDING")
+                    # break
+                    state = 2
 
-                    if drone.i < N - 2: # If WE ARE NOT OUT OF ARRAY BORDERS
-                        goal_pose = drone.cart_trajectory.poses[drone.i]
-                        drone.get_error(goal_pose.x, goal_pose.y, h, goal_pose.theta, "xyzw")
-                        iter = drone.check_distance(drone.i, drone.state_position.x, drone.state_position.y)
+            if state == 2:
+                theta = -1.57
+                drone.get_error(0.0, 0.0, h, theta - fix_ang, "zw")
+                Kr = 0.8
+                theta_err = drone.theta_error
+                theta_err += 2 * math.pi if drone.state_orientation.z > math.pi else 0
 
-                        if drone.dist > drone.precision:
-                            x_real = goal_pose.x + drone.x_offset
-                            y_real = goal_pose.y + drone.y_offset
+                if abs(theta_err) > 10 * pi / 180:
+                    drone.send_velocity(0.0, 0.0, 0.0, Kr * theta_err) #CONTROL YAW
+                    print(theta_err)
+                    continue
 
-                            Vx = PID_X.updatePidControl(x_real, drone.state_position.x, dt) #CONTROL X-SPEED
-                            Vy = PID_Y.updatePidControl(y_real, drone.state_position.y, dt) #CONTROL Y-SPEED
+                else: # WE'VE REACHED THE NEEDED ANGLE, NOW LETS LAND
+                    print("THE GOAL 2 IS REACHED: ANGULAR MOVE")
+                    drone.stabilization()
+                    print("SLEEPING 10 SECS")
+                    rospy.sleep(3)
+                    print("STOP SLEEPING")
+                    drone.land()
+                    print("LANDING")
+                    break
+                # while ((time.time() - drone.start_time) <= flight_duration):
 
-                            theta = drone.state_orientation.z # YAW ANGLE
-                            error_angle = goal_pose.theta - theta # ANGLE BETWEEN CURRENT STATE AND GOAL
+                #     if drone.i < N - 2: # If WE ARE NOT OUT OF ARRAY BORDERS
+                #         goal_pose = drone.cart_trajectory.poses[drone.i]
+                #         drone.get_error(goal_pose.x, goal_pose.y, 0, goal_pose.theta, "xyzw")
+                #         iter = drone.check_distance(drone.i, drone.state_position.x, drone.state_position.y)
 
-                            ### ??? SOS SOS SOS
-                            if error_angle >= math.pi:
-                                error_angle -= 2*math.pi
-                            elif (error_angle < -math.pi):
-                                error_angle += 2*math.pi
+                #         if drone.dist > drone.precision:
+                #             x_real = goal_pose.x + drone.x_offset
+                #             y_real = goal_pose.y + drone.y_offset
 
-                            ### ???
-                            Wz = PID_THETA.updatePidControl(theta + error_angle, theta, dt)
+                #             Vx = PID_X.updatePidControl(x_real, drone.state_position.x, dt) #CONTROL X-SPEED
+                #             Vy = PID_Y.updatePidControl(y_real, drone.state_position.y, dt) #CONTROL Y-SPEED
 
-                            print("Vx " + str(Vx) + " Vy " + str(Vy) + " Err_theta: " + str(error_angle) +  " Theta: " + str(theta) + " Wz:" + str(Wz))
+                #             theta = drone.state_orientation.z # YAW ANGLE
+                #             error_angle = goal_pose.theta - theta # ANGLE BETWEEN CURRENT STATE AND GOAL
 
-                            drone.send_velocity(Vx, Vy, 0.0, Wz)
-                            drone.i = iter + 1
-                            print("iter " + str(iter))
-                    else :
-                        drone.i = 0
+                #             # ### ??? SOS SOS SOS
+                #             if error_angle >= math.pi:
+                #                 error_angle -= 2*math.pi
+                #             elif (error_angle < -math.pi):
+                #                 error_angle += 2*math.pi
 
+                #             # error_angle *= Kr
+                #             # ### ???
+                #             Wz = PID_THETA.updatePidControl(theta + error_angle, theta, dt)
+
+                #             print("Vx " + str(Vx) + " Vy " + str(Vy) + " Err_theta: " + str(error_angle) +  " Theta: " + str(theta) + " Wz:" + str(Wz))
+
+                #             drone.send_velocity(Vx, Vy, 0.0, error_angle)
+                #             drone.i = iter + 1
+                #             print("iter " + str(iter))
+                #     else :
+                #         drone.i = 0
+                # while ((time.time() - drone.start_time) <= flight_duration):
+
+                #     if drone.i < N - 2: # If WE ARE NOT OUT OF ARRAY BORDERS
+                #         goal_pose = drone.cart_trajectory.poses[drone.i]
+                #         goal_pose.theta = 0.5#drone.get_goal_theta(drone.i)
+                #         drone.get_error(goal_pose.x, goal_pose.y, h, goal_pose.theta, "xyzw")
+
+                #         theta_real = drone.state_orientation.z + drone.theta_offset# YAW ANGLE
+                #         x_real = goal_pose.x + drone.x_offset
+                #         y_real = goal_pose.y + drone.y_offset
+
+                #         theta_error = goal_pose.theta - theta_real # ANGLE BETWEEN CURRENT STATE AND GOAL
+                #         if theta_error >= math.pi:
+                #             theta_error -= 2*math.pi
+                #         elif (theta_error < -math.pi):
+                #             theta_error += 2*math.pi
+
+                #         Vx = PID_X.updatePidControl(x_real, drone.state_position.x, dt) #CONTROL X-SPEED
+                #         Vy = PID_Y.updatePidControl(y_real, drone.state_position.y, dt) #CONTROL Y-SPEED
+                #         Wz = PID_THETA.updatePidControl(theta_real + theta_error, theta_real, dt)
+
+
+                #         if drone.readyToMove == True: #if distance L is too small -> check next point
+                #             if drone.dist < 0.2:
+                #                 drone.i += 1
+                #                 #self.Time_to_be_prev += dTc
+                #                 continue
+                #         elif drone.dist < 0.05 :#and theta_error < 0.2: #or ((drone.dist - drone.last_dist) > 0.00002): #2 mm
+                #             drone.readyToMove = True
+                #             drone.i += 1
+                #             drone.last_dist = 200.0
+                #             # self.Time_to_be_prev += dTc
+                #             # print("got", self.trajectoryStep - 1, "time", t, self.ts_d[self.trajectoryStep])
+                #             continue
+
+                #         drone.last_dist = drone.dist
+
+                #         if drone.readyToMove == True:
+                #             drone.send_velocity(Vx, Vy, 0.0, 0.0)
+                #             print("SPEED SENT TO POINT " + str(drone.i))
+                #             print("Vx " + str(Vx) + " Vy " + str(Vy) + " Err_theta" + str(theta_error))
+                #             drone.i += 1
+                #             drone.readyToMove = False
+                #             # print("iter " + str(iter))
+                #     else :
+                #         drone.i = 0
             else:
                 print("FLIGHT TIME IS ENDED")
                 drone.stabilization()
@@ -289,3 +387,4 @@ if __name__ == '__main__':
     drone.stop()
     del drone
     print('End')
+
