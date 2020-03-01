@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 # coding: utf-8
+from __future__ import print_function
 
 import rospy
 from numpy import *
@@ -59,6 +60,7 @@ class DroneController:
         self.dist = 0.0
 
         self.precision = 0.10
+        self.start_time = time.time()
 
     def odom_callback(self, msg):
         lock.acquire()
@@ -116,11 +118,11 @@ class DroneController:
         velocity.angular.z = -Wz
         self.cmd_vel_pub.publish(velocity)
 
-    def get_error(self, goal_x, goal_y, goal_z, goal_theta):
-        self.x_error = goal_x - self.state_position.x
-        self.y_error = goal_y - self.state_position.y
-        self.z_error = goal_z - self.state_position.z
-        self.theta_error = goal_theta - self.state_orientation.z
+    def get_error(self, goal_x, goal_y, goal_z, goal_theta, flag):
+        self.x_error = goal_x - self.state_position.x if "x" in flag else 0
+        self.y_error = goal_y - self.state_position.y if "y" in flag else 0
+        self.z_error = goal_z - self.state_position.z if "z" in flag else 0
+        self.theta_error = goal_theta - self.state_orientation.z if "w" in flag else 0
         self.dist = sqrt(self.x_error ** 2 + self.y_error ** 2)
         self.log_data()
 
@@ -133,14 +135,14 @@ class DroneController:
         self.cmd_vel_pub.publish(velocity)
 
     def log_data(self):
-        s = "Time: " + str(time.time()) + " | Z_err: " + self.z_error + " | Theta_err" + self.theta_error + "\n"
+        s = "Time: " + str(round(time.time() - self.start_time, 4)) + " | Z_err: " + str(self.z_error) + " | Theta_err: " + str(round(self.theta_error, 4)) + "\n"
         self.log_file.write(s)
-        print(s)
+        print(s, end="")
 
 
 
 if __name__ == '__main__':
-    rospy.init_node("1st_task_solve_node")
+    rospy.init_node("task_1st_solve_node")
     drone = DroneController()
 
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
@@ -164,7 +166,8 @@ if __name__ == '__main__':
 
             # TAKEOFF AND REACH THE H
             if state == 0:
-                drone.get_error(0.0, 0.0, h, 0.0)
+                fix_ang = drone.state_orientation.z
+                drone.get_error(0.0, 0.0, h, 0.0, "z")
 
                 if flag_takeoff == False: # TAKEOFF
                     drone.takeoff()
@@ -182,12 +185,12 @@ if __name__ == '__main__':
                     print("SLEEPING 10 SECS")
                     rospy.sleep(10)
                     print("STOP SLEEPING")
-                    fix_ang = drone.state_orientation.z
+                    fix_ang = drone.state_orientation.z ##COPIED UP, WHEN START - TO PRINT SMTHNG INTO LOG
                     state = 1
 
             # YAW BY THETA
             if state == 1:
-                drone.get_error(0.0, 0.0, 0.0, theta - fix_ang)
+                drone.get_error(0.0, 0.0, 0.0, theta - fix_ang, "w")
 
                 theta_err = drone.theta_error
                 theta_err += 2 * math.pi if drone.state_orientation.z > math.pi else 0
@@ -207,7 +210,7 @@ if __name__ == '__main__':
             # MOVE TO (H + dH) HEIGHT
             if state == 2:
                 Kr = 0.2
-                drone.get_error(0.0, 0.0, h + dh, theta - fix_ang)
+                drone.get_error(0.0, 0.0, h + dh, 0.0, "z")
                 theta_err = drone.theta_error
 
                 if abs(drone.z_error) > drone.precision: # IF WE HAVEN'T REACHED THE GOAL POINT - MOVE

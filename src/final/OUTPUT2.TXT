@@ -1,0 +1,7 @@
+Time: 0.0503 | X_err: 0.0 | Y_err: 0.0 | Z_err: 1.0 | Theta_err: 2.618
+Time: 0.1004 | X_err: 0.0 | Y_err: 0.0 | Z_err: 1.0 | Theta_err: 2.618
+Time: 0.1504 | X_err: 0.0 | Y_err: 0.0 | Z_err: 1.0 | Theta_err: 2.618
+Time: 0.2004 | X_err: 0.0 | Y_err: 0.0 | Z_err: 1.0 | Theta_err: 2.618
+Time: 0.2504 | X_err: 0.0 | Y_err: 0.0 | Z_err: 1.0 | Theta_err: 2.618
+Time: 0.3004 | X_err: 0.0 | Y_err: 0.0 | Z_err: 1.0 | Theta_err: 2.618
+Time: 0.4604 | X_err: 0.0 | Y_err: 0.0 | Z_err: 1.0 | Theta_err: 2.618

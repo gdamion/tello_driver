@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 # coding: utf-8
+from __future__ import print_function
 
 import rospy
 from numpy import *
@@ -133,13 +134,13 @@ class DroneController:
 	#     theta = arctan2(y_err, x_err)
 
     def get_error(self, goal_x, goal_y, goal_z, goal_theta):
-        self.x_error = goal_x - self.state_position.x
-        self.y_error = goal_y - self.state_position.y
-        self.z_error = goal_z - self.state_position.z
-        self.theta_error = goal_theta - self.state_orientation.z
+        self.x_error = goal_x - self.state_position.x if "x" in flag else 0
+        self.y_error = goal_y - self.state_position.y if "y" in flag else 0
+        self.z_error = goal_z - self.state_position.z if "z" in flag else 0
+        self.theta_error = goal_theta - self.state_orientation.z if "w" in flag else 0
         self.dist = sqrt(self.x_error ** 2 + self.y_error ** 2)
-        s = "Time: " + str(time.time()) + " | X_err: " + self.x_error + " | Y_err: "
-        + self.y_error + " \nZ_err: " + self.z_error + " | Theta_err" + self.theta_error
+        s = "Time: " + str(round(time.time() - self.start_time, 4)) + " | X_err: " + str(self.x_error) + " | Y_err: "
+        + str(self.y_error) + " \nZ_err: " + str(self.z_error) + " | Theta_err: " + str(round(self.theta_error, 4)) + "\n"
         # print(s)
 
     def stabilization(self):
@@ -168,7 +169,7 @@ class DroneController:
 # В 1 и 2 заданиях всегда считать ошибки по всем координатам, чтобы публиковать актуальную инфу в файл
 
 if __name__ == '__main__':
-    rospy.init_node("3rd_task_solve_node")
+    rospy.init_node("task_3rd_solve_node")
     drone = DroneController()
 
     PID_X = PID(0.8, 0.1, 0.0, 0.5)

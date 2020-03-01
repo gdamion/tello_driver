@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 # coding: utf-8
+from __future__ import print_function
 
 import rospy
 from numpy import *
@@ -62,6 +63,7 @@ class DroneController:
 
         self.x_offset = 0
         self.y_offset = 0
+        self.start_time = time.time()
 
     def odom_callback(self, msg):
         lock.acquire()
@@ -120,10 +122,10 @@ class DroneController:
         self.cmd_vel_pub.publish(velocity)
 
     def get_error(self, goal_x, goal_y, goal_z, goal_theta):
-        self.x_error = goal_x - self.state_position.x
-        self.y_error = goal_y - self.state_position.y
-        self.z_error = goal_z - self.state_position.z
-        self.theta_error = goal_theta - self.state_orientation.z
+        self.x_error = goal_x - self.state_position.x if "x" in flag else 0
+        self.y_error = goal_y - self.state_position.y if "y" in flag else 0
+        self.z_error = goal_z - self.state_position.z if "z" in flag else 0
+        self.theta_error = goal_theta - self.state_orientation.z if "w" in flag else 0
         self.dist = sqrt(self.x_error ** 2 + self.y_error ** 2)
         self.log_data()
 
@@ -136,15 +138,15 @@ class DroneController:
         self.cmd_vel_pub.publish(velocity)
 
     def log_data(self):
-        s = "Time: " + str(time.time()) + " | X_err: " + self.x_error + " | Y_err: "
-        + self.y_error + " | Z_err: " + self.z_error + " | Theta_err" + self.theta_error + "\n"
+        s = "Time: " + str(round(time.time() - self.start_time, 4)) + " | X_err: " + str(self.x_error) + " | Y_err: " \
+        + str(self.y_error) + " | Z_err: " + str(self.z_error) + " | Theta_err: " + str(round(self.theta_error, 4)) + "\n"
         self.log_file.write(s)
-        print(s)
+        print(s, end="")
 
 
 
 if __name__ == '__main__':
-    rospy.init_node("2nd_task_solve_node")
+    rospy.init_node("task_2nd_solve_node")
     drone = DroneController()
 
     PID_X = PID(0.8, 0.2, 0.0, 0.3)
@@ -238,6 +240,7 @@ if __name__ == '__main__':
             drone.emergency_stop()
             drone.land()
 
+    drone.log_file.close()
     drone.stop()
     del drone
     print('End')
