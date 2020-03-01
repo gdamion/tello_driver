@@ -159,8 +159,7 @@ if __name__ == '__main__':
     flag_takeoff = False
     dt = 0.05
     r = rospy.Rate(1/dt)
-    h *= 0.9
-    dh *= 0.9
+    # dh *= 0.9
 
     while not rospy.is_shutdown():
         r.sleep()
