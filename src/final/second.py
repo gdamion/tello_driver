@@ -154,10 +154,10 @@ if __name__ == '__main__':
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
 
     ### INPUT YOUR PARAMETERS HERE
-    h = 2
-    x = 1
-    y = 1
-    theta = -150 * pi / 180
+    h = 2.0
+    x = -1.25
+    y = -1.25
+    theta = 180 * pi / 180
     ###
 
     state = 0
@@ -165,9 +165,9 @@ if __name__ == '__main__':
     flag_takeoff = False
     dt = 0.05
     r = rospy.Rate(1/dt)
-    x *= 0.75
-    y *= 0.75
-    h *= 1
+    x *= 0.7
+    y *= 0.7
+    h *= 0.9
 
     while not rospy.is_shutdown():
         r.sleep()

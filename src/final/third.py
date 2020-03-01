@@ -141,9 +141,9 @@ class DroneController:
         self.z_error = goal_z - self.state_position.z if "z" in flag else 0
         self.theta_error = goal_theta - self.state_orientation.z if "w" in flag else 0
         self.dist = sqrt(self.x_error ** 2 + self.y_error ** 2)
-        s = "Time: " + str(round(time.time() - self.start_time, 4)) + " | X_err: " + str(self.x_error) + " | Y_err: "
+        s = "Time: " + str(round(time.time() - self.start_time, 4)) + " | X_err: " + str(self.x_error) + " | Y_err: " \
         + str(self.y_error) + " \nZ_err: " + str(self.z_error) + " | Theta_err: " + str(round(self.theta_error, 4)) + "\n"
-        # print(s)
+        print(s)
 
     def stabilization(self):
         velocity = Twist()
@@ -160,11 +160,12 @@ class DroneController:
             distance = sqrt(x_error**2 + y_error**2)
             if (distance >= 0.1):
                 return i
+
     def get_goal_theta(self, goal_i):
-	x_error = self.cart_trajectory.poses[goal_i].x - self.state_position.x
+        x_error = self.cart_trajectory.poses[goal_i].x - self.state_position.x
         y_error = self.cart_trajectory.poses[goal_i].y - self.state_position.y
-	goal_theta = arctan2(y_error, x_error)
-	return goal_theta
+        goal_theta = arctan2(y_error, x_error)
+        return goal_theta
 
 #Замечания
 # Угол желаемый считать относительно текущей и следующей точки
@@ -184,7 +185,7 @@ if __name__ == '__main__':
     PID_Z = PID(1.15, 0.4, 0.0, 0.5)
 
     ### INPUT YOUR PARAMETERS HERE
-    h = 0.3
+    h = 2
     ###
 
     Kr = 0.7
@@ -198,7 +199,7 @@ if __name__ == '__main__':
 
     while not rospy.is_shutdown():
         r.sleep()
-        drone.get_error(0.0, 0.0, h, theta - fix_ang)
+        drone.get_error(0.0, 0.0, h, theta - fix_ang, "zw")
         try:
 
             # TAKEOFF AND REACH THE H
@@ -235,8 +236,8 @@ if __name__ == '__main__':
 
                     if drone.i < N - 2: # If WE ARE NOT OUT OF ARRAY BORDERS
                         goal_pose = drone.cart_trajectory.poses[drone.i]
-			goal_pose.theta = get_goal_theta(drone.i)
-                        drone.get_error(goal_pose.x, goal_pose.y, 0, goal_pose.theta)
+                        goal_pose.theta = drone.get_goal_theta(drone.i)
+                        drone.get_error(goal_pose.x, goal_pose.y, h, goal_pose.theta, "xyzw")
 
                         #iter = drone.check_distance(drone.i, drone.state_position.x, drone.state_position.y)
 
@@ -266,7 +267,7 @@ if __name__ == '__main__':
                                 drone.i += 1
                                 #self.Time_to_be_prev += dTc
                                 continue
-                        elif drone.dist < 0.05 or ((drone.dist - drone.last_dist) > 0.00002): #2 mm
+                        elif drone.dist < 0.1: #or ((drone.dist - drone.last_dist) > 0.00002): #2 mm
                             drone.readyToMove = True
                             drone.i += 1
                             drone.last_dist = 200.0
@@ -276,6 +277,7 @@ if __name__ == '__main__':
 
                         drone.last_dist = drone.dist
 
+                        error_angle = 0
                         if drone.readyToMove == True:
                             drone.send_velocity(Vx, Vy, 0.0, error_angle)
                             drone.i += 1
