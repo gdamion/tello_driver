@@ -191,7 +191,7 @@ if __name__ == '__main__':
     PID_THETA = PID(0.9, 0.3, 0.0, 0.5)
 
     ### INPUT YOUR PARAMETERS HERE
-    h = 2.0
+    h = 1.0
     ###
 
     Kr = 0.7
@@ -243,6 +243,7 @@ if __name__ == '__main__':
 
                     if drone.i < N - 2: # If WE ARE NOT OUT OF ARRAY BORDERS
                         goal_pose = drone.cart_trajectory.poses[drone.i]
+                        print("i", drone.i)
 
                         x_real = goal_pose.x + drone.x_offset
                         y_real = goal_pose.y + drone.y_offset
@@ -263,6 +264,7 @@ if __name__ == '__main__':
                         if abs(error_angle) > 0.2 and vel_flag == False:
                             Wz = PID_THETA.updatePidControl(theta + error_angle, theta, dt)
                             drone.send_velocity(0.0, 0.0, 0.0, Wz)
+                            print("Wz", Wz)
                             ang_flag = True
                             continue
                         else :
@@ -273,8 +275,9 @@ if __name__ == '__main__':
                             Vx = PID_X.updatePidControl(x_real, drone.state_position.x, dt) #CONTROL X-SPEED
                             Vy = PID_Y.updatePidControl(y_real, drone.state_position.y, dt) #CONTROL Y-SPEED
                             drone.send_velocity(Vx, Vy, 0.0, 0.0)
+                            print("V", Vx, Vy)
                             vel_flag = True
-                            drone.i += 1
+                            # drone.i += 1
                             continue
                         else :
                             vel_flag = False
